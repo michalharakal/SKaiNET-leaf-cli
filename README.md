@@ -107,7 +107,7 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 | Language | Kotlin 2.3.0 |
 | JVM | Java 21 (with Vector API incubator) |
 | Build | Gradle 8.13 (Kotlin DSL) |
-| Model inference | [SKaiNET](https://github.com/nickolay-kondratyev/SKaiNET) BERT runtime (CPU) |
+| Model inference | https://github.com/SKaiNET-developers/SKaiNET BERT runtime (CPU) |
 | Model format | SafeTensors |
 | Embedding model | MongoDB/mdbr-leaf-mt (multilingual, 768-dim output) |
 | CLI parsing | kotlinx-cli |
