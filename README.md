@@ -2,7 +2,7 @@
 
 A semantic search CLI built on pure JVM. Index your markdown documentation and query it with natural language — no database, no external vector engine, no Python.
 
-Built as a companion project for the JavaLand Unconference session: **"Build Your Own Semantic Search Engine in Pure Java (No DB, No Magic)"**.
+Built as a companion project for the JavaLand Unconference session: **"Build Your Own Semantic Search Engine in Pure JVM (No DB, No Magic)"**.
 
 ## How it works
 
