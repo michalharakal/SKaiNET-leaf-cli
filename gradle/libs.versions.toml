@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.0"
-skainet = "0.13.0"
+skainet = "0.14.1"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCli = "0.3.6"
