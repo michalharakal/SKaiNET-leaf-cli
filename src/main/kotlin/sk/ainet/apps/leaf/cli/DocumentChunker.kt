@@ -22,6 +22,7 @@ object DocumentChunker {
             .forEach { file ->
                 val relativePath = file.toPath().relativeTo(directory).toString()
                 val text = file.toPath().readText()
+                println(file.toPath().toString())
                 val fileChunks = chunkText(text, chunkSize, overlap)
                 fileChunks.forEachIndexed { index, content ->
                     chunks.add(DocumentChunk(content = content, source = relativePath, chunkIndex = index))
