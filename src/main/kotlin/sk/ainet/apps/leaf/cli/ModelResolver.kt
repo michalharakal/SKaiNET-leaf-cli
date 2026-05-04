@@ -1,7 +1,7 @@
 package sk.ainet.apps.leaf.cli
 
-import sk.ainet.apps.bert.BertModelConfig
-import sk.ainet.apps.bert.MDBR_LEAF_IR_CONFIG
+import sk.ainet.models.bert.BertModelConfig
+import sk.ainet.models.bert.MDBR_LEAF_IR_CONFIG
 import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory

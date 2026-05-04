@@ -6,8 +6,18 @@ Built as a companion project for the JavaLand Unconference session: **"Build You
 
 ## How it works
 
-```
-Markdown Files → Chunking → LEAF Embeddings (local inference) → In-Memory Vector Store → Cosine Similarity Search → CLI Output
+```mermaid
+flowchart LR
+    A[Markdown files]:::src --> B[Smart chunker<br/>paragraph / sentence / line aware]
+    B --> C[LEAF embedder<br/>local CPU inference]
+    C --> D[(In-memory<br/>vector store<br/>JSON on disk)]
+    E[User question]:::src --> C
+    C --> F{Cosine similarity}
+    D --> F
+    F --> G[Top-K chunks]:::out
+
+    classDef src fill:#e8f0ff,stroke:#3060a0,color:#102040
+    classDef out fill:#e7f7e1,stroke:#2f7c2c,color:#0e2c10
 ```
 
 1. **Index** — reads `.md` files, splits them into overlapping chunks, generates embeddings using the [MongoDB/mdbr-leaf-mt](https://huggingface.co/MongoDB/mdbr-leaf-mt) model, and saves the index to a JSON file.
@@ -90,11 +100,44 @@ Top 3 results:
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph CLI[leaf-cli]
+        Main[Main.kt<br/>index / ask subcommands]
+        Chunker[DocumentChunker]
+        Store[VectorStore]
+        Loader[LeafEmbedder<br/>loads model + adapter]
+    end
+
+    subgraph SPI[Neutral embedding SPI]
+        EM([EmbeddingModel])
+    end
+
+    subgraph Transformers[SKaiNET-transformers 0.23.1]
+        Adapter[SkaiNetEmbeddingModel<br/>BERT → SPI adapter]
+        Bert[BertRuntime<br/>+ HuggingFace tokenizer]
+    end
+
+    subgraph Engine[SKaiNET 0.23.1]
+        Ctx[DirectCpuExecutionContext]
+        Safe[SafeTensors loader]
+    end
+
+    Main --> Chunker
+    Main --> Store
+    Main --> EM
+    Loader --> EM
+    EM -.implements.-> Adapter
+    Adapter --> Bert
+    Bert --> Ctx
+    Loader --> Safe
+```
+
 ```
 src/main/kotlin/sk/ainet/apps/leaf/cli/
 ├── Main.kt              # CLI entry point (index & ask subcommands)
 ├── ModelResolver.kt     # Model discovery and config detection
-├── EmbeddingService.kt  # BERT model loading and text-to-vector inference
+├── LeafEmbedder.kt      # Loads model and exposes the neutral EmbeddingModel
 ├── DocumentChunker.kt   # Smart markdown chunking with overlap
 ├── VectorDocument.kt    # Serializable document + embedding container
 └── VectorStore.kt       # In-memory vector storage and cosine similarity search
@@ -107,7 +150,8 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 | Language | Kotlin 2.3.0 |
 | JVM | Java 21 (with Vector API incubator) |
 | Build | Gradle 8.13 (Kotlin DSL) |
-| Model inference | https://github.com/SKaiNET-developers/SKaiNET BERT runtime (CPU) |
+| Embedding API | SKaiNET-transformers neutral `EmbeddingModel` SPI (0.23.1) |
+| Model inference | SKaiNET BERT runtime on CPU (engine 0.23.1 via transformers BOM) |
 | Model format | SafeTensors |
 | Embedding model | MongoDB/mdbr-leaf-mt (multilingual, 768-dim output) |
 | CLI parsing | kotlinx-cli |
@@ -116,11 +160,20 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 
 ## Key design decisions
 
+- **Neutral embedding API** — `LeafEmbedder.load(...)` returns an `EmbeddingModel`, a small provider-neutral SPI shaped like the `embed(text)` / `embed(listOf(...))` / `call(EmbeddingRequest)` contract found across mainstream Java AI frameworks. The CLI never touches BERT-specific types directly, so swapping the underlying model later is a one-file change.
 - **No database** — embeddings live in memory and persist as plain JSON. Vector databases are an optimization layer; this project teaches the fundamentals.
 - **No external services** — model inference runs locally on CPU via SKaiNET's BERT runtime.
 - **Smart chunking** — the chunker respects paragraph, sentence, and line boundaries rather than cutting mid-word. Chunks overlap by 100 characters for context continuity.
 - **Brute-force search** — cosine similarity is computed against every stored embedding. Simple, correct, and sufficient for documentation-scale corpora.
 - **Multilingual** — the LEAF model supports 50+ languages out of the box. Index English docs, query in German — it works.
+
+## Version pinning
+
+The app pins **`sk.ainet.transformers:*:0.23.1`** via `platform("sk.ainet.transformers:skainet-transformers-bom:0.23.1")` from public Maven Central. The transformers BOM transitively imports the engine BOM, so every `sk.ainet.core:*` artifact aligns to `0.23.1` automatically — the version-catalog entries for the engine artifacts list the module coordinates without `version.ref`, leaving the BOM as the single source of truth. The version knob lives in one place: `gradle/libs.versions.toml` (`skainetTransformers = "0.23.1"`).
+
+`LeafEmbedder.kt` references engine types (`DirectCpuExecutionContext`, `SafeTensorsParametersLoader`, `FP32`, `JvmRandomAccessSource`) directly, so the four `sk.ainet.core:*` `implementation` lines in `build.gradle.kts` are required for the compile classpath — upstream declares them as Gradle `implementation` (runtime-only for consumers). Once the one-call `BertEmbeddingModel.load(...)` loader from the PRD lands, the engine types stop leaking into consumer code and those four lines go away.
+
+The next simplification — replacing `LeafEmbedder.kt`'s ~50-line load path with a one-call `BertEmbeddingModel.load(modelDir)` — is tracked by [`PRD-skainet-transformers-bert-embeddings.md`](../PRD-skainet-transformers-bert-embeddings.md) at the workspace root and will land in a future transformers release.
 
 ## License
 

@@ -16,11 +16,24 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.skainet.apps.bert)
+    // Transformers BOM — also imports the engine BOM, so all sk.ainet:* and
+    // sk.ainet.core:* / sk.ainet.transformers:* artifacts are aligned.
+    implementation(platform(libs.skainet.transformers.bom))
+
+    implementation(libs.skainet.transformers.api)
+    implementation(libs.skainet.transformers.core)
+    implementation(libs.skainet.transformers.providers)
+    implementation(libs.skainet.transformers.inference.bert)
+
+    // Engine classes that LeafEmbedder.kt references directly. Upstream
+    // declares them as Gradle `implementation`, which is runtime-only for
+    // consumers, so they must be on this module's compile classpath.
+    // Versions are aligned by the transformers BOM above.
     implementation(libs.skainet.lang.core)
     implementation(libs.skainet.io.core)
     implementation(libs.skainet.io.safetensors)
     implementation(libs.skainet.backend.cpu)
+
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.cli)
     implementation(libs.kotlinx.serialization.json)
