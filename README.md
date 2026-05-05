@@ -106,7 +106,7 @@ flowchart TB
         Main[Main.kt<br/>index / ask subcommands]
         Chunker[DocumentChunker]
         Store[VectorStore]
-        Loader[LeafEmbedder<br/>loads model + adapter]
+        Loader[LeafEmbeddingModel<br/>fromSafeTensors factory]
     end
 
     subgraph SPI[Neutral embedding SPI]
@@ -137,7 +137,7 @@ flowchart TB
 src/main/kotlin/sk/ainet/apps/leaf/cli/
 ├── Main.kt              # CLI entry point (index & ask subcommands)
 ├── ModelResolver.kt     # Model discovery and config detection
-├── LeafEmbedder.kt      # Loads model and exposes the neutral EmbeddingModel
+├── LeafEmbeddingModel.kt # Spring-AI-shaped factory returning the neutral EmbeddingModel SPI
 ├── DocumentChunker.kt   # Smart markdown chunking with overlap
 ├── VectorDocument.kt    # Serializable document + embedding container
 └── VectorStore.kt       # In-memory vector storage and cosine similarity search
@@ -160,7 +160,7 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 
 ## Key design decisions
 
-- **Neutral embedding API** — `LeafEmbedder.load(...)` returns an `EmbeddingModel`, a small provider-neutral SPI shaped like the `embed(text)` / `embed(listOf(...))` / `call(EmbeddingRequest)` contract found across mainstream Java AI frameworks. The CLI never touches BERT-specific types directly, so swapping the underlying model later is a one-file change.
+- **Neutral embedding API** — `LeafEmbeddingModel.fromSafeTensors(modelDir)` returns an `EmbeddingModel`, a small provider-neutral SPI shaped like the `embed(text)` / `embed(listOf(...))` / `call(EmbeddingRequest)` contract found across mainstream Java AI frameworks (Spring AI in particular). The factory mirrors `Gemma4ChatModel.fromSafeTensors(...)` upstream — singleton object, single one-call entry point that hides the runtime / weight-loader / tokenizer assembly behind the SPI. The CLI never touches BERT-specific types directly, so swapping the underlying model later is a one-file change.
 - **No database** — embeddings live in memory and persist as plain JSON. Vector databases are an optimization layer; this project teaches the fundamentals.
 - **No external services** — model inference runs locally on CPU via SKaiNET's BERT runtime.
 - **Smart chunking** — the chunker respects paragraph, sentence, and line boundaries rather than cutting mid-word. Chunks overlap by 100 characters for context continuity.
@@ -171,9 +171,9 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 
 The app pins **`sk.ainet.transformers:*:0.23.1`** via `platform("sk.ainet.transformers:skainet-transformers-bom:0.23.1")` from public Maven Central. The transformers BOM transitively imports the engine BOM, so every `sk.ainet.core:*` artifact aligns to `0.23.1` automatically — the version-catalog entries for the engine artifacts list the module coordinates without `version.ref`, leaving the BOM as the single source of truth. The version knob lives in one place: `gradle/libs.versions.toml` (`skainetTransformers = "0.23.1"`).
 
-`LeafEmbedder.kt` references engine types (`DirectCpuExecutionContext`, `SafeTensorsParametersLoader`, `FP32`, `JvmRandomAccessSource`) directly, so the four `sk.ainet.core:*` `implementation` lines in `build.gradle.kts` are required for the compile classpath — upstream declares them as Gradle `implementation` (runtime-only for consumers). Once the one-call `BertEmbeddingModel.load(...)` loader from the PRD lands, the engine types stop leaking into consumer code and those four lines go away.
+`LeafEmbeddingModel.kt` references engine types (`DirectCpuExecutionContext`, `SafeTensorsParametersLoader`, `FP32`, `JvmRandomAccessSource`) directly, so the four `sk.ainet.core:*` `implementation` lines in `build.gradle.kts` are required for the compile classpath — upstream declares them as Gradle `implementation` (runtime-only for consumers). Once the one-call `BertEmbeddingModel.load(...)` loader from the PRD lands, the engine types stop leaking into consumer code and those four lines go away.
 
-The next simplification — replacing `LeafEmbedder.kt`'s ~50-line load path with a one-call `BertEmbeddingModel.load(modelDir)` — is tracked by [`PRD-skainet-transformers-bert-embeddings.md`](../PRD-skainet-transformers-bert-embeddings.md) at the workspace root and will land in a future transformers release.
+The next simplification — replacing `LeafEmbeddingModel.kt`'s ~100-line load path (multi-loader merge for `2_Dense/model.safetensors`, config auto-detect, vocab parsing) with a one-call `BertEmbeddingModel.fromSafeTensors(modelDir)` upstream — is tracked by [`PRD-skainet-transformers-bert-embeddings.md`](../PRD-skainet-transformers-bert-embeddings.md) at the workspace root and will land in a future transformers release.
 
 ## License
 

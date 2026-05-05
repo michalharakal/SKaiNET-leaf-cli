@@ -7,7 +7,6 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.ExperimentalCli
 import kotlinx.cli.Subcommand
 import kotlinx.cli.default
-import kotlinx.coroutines.runBlocking
 import sk.ainet.llm.api.EmbeddingModel
 import java.nio.file.Path
 import kotlin.time.measureTime
@@ -24,7 +23,7 @@ private class IndexCommand : Subcommand("index", "Index markdown files for seman
     val output by option(ArgType.String, shortName = "o", fullName = "output", description = "Output index file path").default("leaf-index.json")
     val chunkSize by option(ArgType.Int, fullName = "chunk-size", description = "Target chunk size in characters").default(600)
 
-    override fun execute() = runBlocking {
+    override fun execute() {
         val folderPath = Path.of(folder)
         if (!folderPath.toFile().isDirectory) error("Not a directory: $folder")
 
@@ -33,16 +32,12 @@ private class IndexCommand : Subcommand("index", "Index markdown files for seman
         val chunks = DocumentChunker.chunkDirectory(folderPath, chunkSize)
         println("${chunks.size} chunks from ${chunks.map { it.source }.distinct().size} files")
 
-        // Resolve model
+        // Resolve and load the model behind the neutral EmbeddingModel SPI.
         val resolvedModelDir = ModelResolver.resolveModelDir(modelDir)
-        val config = ModelResolver.detectConfig(resolvedModelDir)
-        println("Model: ${resolvedModelDir.fileName} (hidden=${config.hiddenSize}, projection=${config.projectionDim ?: "none"})")
-
-        // Load model behind the neutral EmbeddingModel SPI
         print("Loading model... ")
         val embedder: EmbeddingModel
-        val loadTime = measureTime { embedder = LeafEmbedder.load(resolvedModelDir, config) }
-        println("done ($loadTime) — dimensions=${embedder.dimensions}")
+        val loadTime = measureTime { embedder = LeafEmbeddingModel.fromSafeTensors(resolvedModelDir) }
+        println("done ($loadTime) — model=${resolvedModelDir.fileName}, dimensions=${embedder.dimensions}")
 
         // Generate embeddings
         val store = VectorStore()
@@ -78,7 +73,7 @@ private class AskCommand : Subcommand("ask", "Ask a question against an indexed 
     val indexFile by option(ArgType.String, shortName = "i", fullName = "index", description = "Path to index file").default("leaf-index.json")
     val topK by option(ArgType.Int, shortName = "k", fullName = "top-k", description = "Number of results to return").default(3)
 
-    override fun execute() = runBlocking {
+    override fun execute() {
         val indexPath = Path.of(indexFile)
         if (!indexPath.toFile().exists()) error("Index file not found: $indexFile")
 
@@ -87,12 +82,11 @@ private class AskCommand : Subcommand("ask", "Ask a question against an indexed 
         val (store, modelDirStr) = VectorStore.loadFrom(indexPath)
         println("done (${store.size()} documents)")
 
-        // Load model behind the neutral EmbeddingModel SPI
+        // Load the model behind the neutral EmbeddingModel SPI.
         val modelDir = Path.of(modelDirStr)
-        val config = ModelResolver.detectConfig(modelDir)
         print("Loading model... ")
         val embedder: EmbeddingModel
-        val loadTime = measureTime { embedder = LeafEmbedder.load(modelDir, config) }
+        val loadTime = measureTime { embedder = LeafEmbeddingModel.fromSafeTensors(modelDir) }
         println("done ($loadTime)")
 
         // Embed question and search
