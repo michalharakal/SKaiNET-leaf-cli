@@ -113,7 +113,7 @@ flowchart TB
         EM([EmbeddingModel])
     end
 
-    subgraph Transformers[SKaiNET-transformers 0.23.1]
+    subgraph Transformers[SKaiNET-transformers 0.23.2]
         Adapter[SkaiNetEmbeddingModel<br/>BERT → SPI adapter]
         Bert[BertRuntime<br/>+ HuggingFace tokenizer]
     end
@@ -150,7 +150,7 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 | Language | Kotlin 2.3.0 |
 | JVM | Java 21 (with Vector API incubator) |
 | Build | Gradle 8.13 (Kotlin DSL) |
-| Embedding API | SKaiNET-transformers neutral `EmbeddingModel` SPI (0.23.1) |
+| Embedding API | SKaiNET-transformers neutral `EmbeddingModel` SPI (0.23.2) |
 | Model inference | SKaiNET BERT runtime on CPU (engine 0.23.1 via transformers BOM) |
 | Model format | SafeTensors |
 | Embedding model | MongoDB/mdbr-leaf-mt (multilingual, 768-dim output) |
@@ -169,7 +169,7 @@ src/main/kotlin/sk/ainet/apps/leaf/cli/
 
 ## Version pinning
 
-The app pins **`sk.ainet.transformers:*:0.23.1`** via `platform("sk.ainet.transformers:skainet-transformers-bom:0.23.1")` from public Maven Central. The transformers BOM transitively imports the engine BOM, so every `sk.ainet.core:*` artifact aligns to `0.23.1` automatically — the version-catalog entries for the engine artifacts list the module coordinates without `version.ref`, leaving the BOM as the single source of truth. The version knob lives in one place: `gradle/libs.versions.toml` (`skainetTransformers = "0.23.1"`).
+The app pins **`sk.ainet.transformers:*:0.23.2`** via `platform("sk.ainet.transformers:skainet-transformers-bom:0.23.2")` from public Maven Central. The transformers BOM transitively imports the engine BOM (`sk.ainet:skainet-bom:0.23.1` — the engine line tops out at 0.23.1; transformers 0.23.2 is a transformers-only patch on the same engine), so every `sk.ainet.core:*` artifact aligns to `0.23.1` automatically. The version-catalog entries for the engine artifacts list the module coordinates without `version.ref`, leaving the BOM as the single source of truth. The version knob lives in one place: `gradle/libs.versions.toml` (`skainetTransformers = "0.23.2"`).
 
 `LeafEmbeddingModel.kt` references engine types (`DirectCpuExecutionContext`, `SafeTensorsParametersLoader`, `FP32`, `JvmRandomAccessSource`) directly, so the four `sk.ainet.core:*` `implementation` lines in `build.gradle.kts` are required for the compile classpath — upstream declares them as Gradle `implementation` (runtime-only for consumers). Once the one-call `BertEmbeddingModel.load(...)` loader from the PRD lands, the engine types stop leaking into consumer code and those four lines go away.
 
