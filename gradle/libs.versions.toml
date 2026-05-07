@@ -2,7 +2,7 @@
 kotlin = "2.3.0"
 # sk.ainet.core:* and sk.ainet.transformers:* are pinned independently
 # because their release lines aren't always lock-stepped.
-skainetTransformers = "0.23.3cd "
+skainetTransformers = "0.23.3"
 skainetCore = "0.23.1"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
