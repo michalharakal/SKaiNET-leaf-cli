@@ -3,11 +3,11 @@ name: Build
 on:
   push:
     branches: ['**']
-    tags-ignore: ['**']
+    tags: ['v*']
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   shadow-jar:
@@ -23,15 +23,56 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
+
+      - name: Verify annotated tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          type=$(git cat-file -t "$tag")
+          if [ "$type" != "tag" ]; then
+            echo "::error::Tag '$tag' is not annotated (object type: $type). Re-tag with 'git tag -a $tag -m \"...\"' and push." >&2
+            exit 1
+          fi
 
       - name: Build shadow JAR
-        run: gradle --no-daemon shadowJar
+        run: ./gradlew --no-daemon shadowJar
 
-      - name: Upload shadow JAR
+      - name: Resolve version
+        if: startsWith(github.ref, 'refs/tags/')
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Stage release artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          mkdir -p release
+          cp build/libs/leaf-cli-all.jar \
+             "release/leaf-cli-${{ steps.ver.outputs.version }}-all.jar"
+
+      - name: Extract tag message
+        if: startsWith(github.ref, 'refs/tags/')
+        id: msg
+        run: |
+          {
+            echo 'body<<TAG_EOF'
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo TAG_EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload shadow JAR (CI artifact)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: leaf-cli-${{ github.sha }}
           path: build/libs/leaf-cli-all.jar
           if-no-files-found: error
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.msg.outputs.body }}
+          files: release/leaf-cli-${{ steps.ver.outputs.version }}-all.jar
+          fail_on_unmatched_files: true
