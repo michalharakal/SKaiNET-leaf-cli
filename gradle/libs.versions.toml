@@ -1,30 +1,26 @@
 [versions]
 kotlin = "2.3.0"
-skainetTransformers = "0.23.2"
+# sk.ainet.core:* and sk.ainet.transformers:* are pinned independently
+# because their release lines aren't always lock-stepped.
+skainetTransformers = "0.23.3cd "
+skainetCore = "0.23.1"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCli = "0.3.6"
 shadow = "9.3.1"
 
 [libraries]
-# Transformers BOM — transitively imports the engine BOM, so all sk.ainet.core:*
-# and sk.ainet.transformers:* artifacts are aligned at the same release line.
-skainet-transformers-bom = { module = "sk.ainet.transformers:skainet-transformers-bom", version.ref = "skainetTransformers" }
-
 # Neutral embedding SPI + adapter. Multiplatform-root coords; Gradle metadata picks the JVM variant.
 skainet-transformers-api = { module = "sk.ainet.transformers:skainet-transformers-api", version.ref = "skainetTransformers" }
 skainet-transformers-core = { module = "sk.ainet.transformers:skainet-transformers-core", version.ref = "skainetTransformers" }
 skainet-transformers-providers = { module = "sk.ainet.transformers:skainet-transformers-providers", version.ref = "skainetTransformers" }
 skainet-transformers-inference-bert = { module = "sk.ainet.transformers:skainet-transformers-inference-bert", version.ref = "skainetTransformers" }
 
-# Engine artifacts that LeafEmbedder.kt touches at compile time. Versions come
-# from the transformers BOM (which transitively imports the engine BOM), so we
-# leave version.ref unset — the BOM aligns them to the same release line as
-# the transformers artifacts above.
-skainet-lang-core = { module = "sk.ainet.core:skainet-lang-core" }
-skainet-io-core = { module = "sk.ainet.core:skainet-io-core" }
-skainet-io-safetensors = { module = "sk.ainet.core:skainet-io-safetensors" }
-skainet-backend-cpu = { module = "sk.ainet.core:skainet-backend-cpu" }
+# Engine artifacts that LeafEmbedder.kt touches at compile time.
+skainet-lang-core = { module = "sk.ainet.core:skainet-lang-core", version.ref = "skainetCore" }
+skainet-io-core = { module = "sk.ainet.core:skainet-io-core", version.ref = "skainetCore" }
+skainet-io-safetensors = { module = "sk.ainet.core:skainet-io-safetensors", version.ref = "skainetCore" }
+skainet-backend-cpu = { module = "sk.ainet.core:skainet-backend-cpu", version.ref = "skainetCore" }
 
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli", version.ref = "kotlinxCli" }
