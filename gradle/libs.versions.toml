@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.0"
-skainetTransformers = "0.23.3"
+skainetTransformers = "0.23.5"
 kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCli = "0.3.6"
