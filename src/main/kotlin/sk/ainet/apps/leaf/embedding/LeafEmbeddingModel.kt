@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package sk.ainet.apps.leaf.cli
+package sk.ainet.apps.leaf.embedding
 
 import kotlinx.coroutines.runBlocking
 import sk.ainet.context.DirectCpuExecutionContext
