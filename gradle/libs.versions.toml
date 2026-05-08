@@ -5,6 +5,7 @@ kotlinxCoroutines = "1.10.2"
 kotlinxSerializationJson = "1.9.0"
 kotlinxCli = "0.3.6"
 shadow = "9.3.1"
+junit = "5.11.4"
 
 [libraries]
 # Transformers BOM — transitively imports the engine BOM, so all sk.ainet.core:*
@@ -29,6 +30,12 @@ skainet-backend-cpu = { module = "sk.ainet.core:skainet-backend-cpu" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli", version.ref = "kotlinxCli" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+# JUnit 5 / kotlin.test for unit tests.
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 
 [plugins]
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
