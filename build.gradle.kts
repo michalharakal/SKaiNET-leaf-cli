@@ -37,6 +37,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.cli)
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.kotlin.test.junit5)
 }
 
 tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
@@ -56,6 +61,7 @@ tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJ
 }
 
 tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
     jvmArgs("--enable-preview", "--add-modules", "jdk.incubator.vector")
 }
 
