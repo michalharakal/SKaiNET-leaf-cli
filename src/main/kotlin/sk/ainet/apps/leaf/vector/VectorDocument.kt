@@ -1,4 +1,4 @@
-package sk.ainet.apps.leaf.cli
+package sk.ainet.apps.leaf.vector
 
 import kotlinx.serialization.Serializable
 
@@ -8,7 +8,7 @@ data class VectorDocument(
     val content: String,
     val source: String,
     val chunkIndex: Int,
-    val embedding: FloatArray
+    val embedding: FloatArray,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
