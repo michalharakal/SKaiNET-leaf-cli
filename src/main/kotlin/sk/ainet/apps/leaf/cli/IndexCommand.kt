@@ -9,7 +9,6 @@ import kotlinx.cli.default
 import sk.ainet.apps.leaf.chunking.Chunker
 import sk.ainet.apps.leaf.chunking.SmartChunker
 import sk.ainet.apps.leaf.chunking.chunkDirectory
-import sk.ainet.apps.leaf.embedding.LeafEmbeddingModel
 import sk.ainet.apps.leaf.embedding.ModelResolver
 import sk.ainet.apps.leaf.vector.JsonFileVectorRepository
 import sk.ainet.apps.leaf.vector.VectorDocument
@@ -19,7 +18,7 @@ import kotlin.time.measureTime
 
 internal class IndexCommand : Subcommand("index", "Index markdown files for semantic search") {
     val folder by argument(ArgType.String, description = "Directory containing .md files")
-    val modelDir by option(ArgType.String, shortName = "m", fullName = "model-dir", description = "Path to LEAF model directory")
+    val modelDir by option(ArgType.String, shortName = "m", fullName = "model-dir", description = "LEAF model directory or Hugging Face repo id (default: ${ModelResolver.DEFAULT_REPO}, downloaded on first use)")
     val output by option(ArgType.String, shortName = "o", fullName = "output", description = "Output index file path").default("leaf-index.json")
     val chunkSize by option(ArgType.Int, fullName = "chunk-size", description = "Target chunk size in characters").default(600)
 
@@ -32,11 +31,11 @@ internal class IndexCommand : Subcommand("index", "Index markdown files for sema
         val chunks = chunkDirectory(chunker, folderPath)
         println("${chunks.size} chunks from ${chunks.map { it.source }.distinct().size} files")
 
-        val resolvedModelDir = ModelResolver.resolveModelDir(modelDir)
-        print("Loading model... ")
+        val modelSpec = ModelResolver.resolve(modelDir)
+        print("Loading model ($modelSpec)... ")
         val embedder: EmbeddingModel
-        val loadTime = measureTime { embedder = LeafEmbeddingModel.fromSafeTensors(resolvedModelDir) }
-        println("done ($loadTime) — model=${resolvedModelDir.fileName}, dimensions=${embedder.dimensions}")
+        val loadTime = measureTime { embedder = ModelResolver.open(modelSpec) }
+        println("done ($loadTime) — dimensions=${embedder.dimensions}")
 
         val repo = JsonFileVectorRepository(Path.of(output))
         println("Generating embeddings...")
@@ -59,7 +58,7 @@ internal class IndexCommand : Subcommand("index", "Index markdown files for sema
         }
         println("\r  ${chunks.size}/${chunks.size} chunks embedded ($embedTime)")
 
-        repo.save(modelDir = resolvedModelDir.toAbsolutePath().toString())
+        repo.save(modelDir = modelSpec)
         println("Index saved to $output (${repo.count()} documents)")
     }
 }

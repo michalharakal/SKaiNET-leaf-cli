@@ -6,10 +6,10 @@ import kotlinx.cli.ArgType
 import kotlinx.cli.ExperimentalCli
 import kotlinx.cli.Subcommand
 import kotlinx.cli.default
-import sk.ainet.apps.leaf.embedding.LeafEmbeddingModel
 import sk.ainet.apps.leaf.vector.JsonFileVectorRepository
 import sk.ainet.apps.leaf.vector.ScoredDocument
 import sk.ainet.apps.leaf.vector.VectorRepository
+import sk.ainet.apps.leaf.embedding.ModelResolver
 import sk.ainet.llm.api.EmbeddingModel
 import java.nio.file.Path
 import kotlin.time.measureTime
@@ -28,10 +28,9 @@ internal class AskCommand : Subcommand("ask", "Ask a question against an indexed
         val repo: VectorRepository = loaded
         println("done (${repo.count()} documents)")
 
-        val modelDir = Path.of(modelDirStr)
-        print("Loading model... ")
+        print("Loading model ($modelDirStr)... ")
         val embedder: EmbeddingModel
-        val loadTime = measureTime { embedder = LeafEmbeddingModel.fromSafeTensors(modelDir) }
+        val loadTime = measureTime { embedder = ModelResolver.open(modelDirStr) }
         println("done ($loadTime)")
 
         print("Searching... ")
