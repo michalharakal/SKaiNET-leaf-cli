@@ -7,6 +7,6 @@ import kotlinx.cli.ExperimentalCli
 
 fun main(args: Array<String>) {
     val parser = ArgParser("leaf-cli")
-    parser.subcommands(IndexCommand(), AskCommand())
+    parser.subcommands(IndexCommand(), AskCommand(), BenchCommand())
     parser.parse(args)
 }
